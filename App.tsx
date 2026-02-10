@@ -14,6 +14,9 @@ const App: React.FC = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [activeStaff, setActiveStaff] = useState<StaffName>(STAFF_LIST[0] as StaffName);
   
+  // 검색 상태
+  const [searchTerm, setSearchTerm] = useState('');
+
   // 아카이브/월별 필터링 상태
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -183,10 +186,25 @@ const App: React.FC = () => {
   };
 
 
-  const filteredTasks = useMemo(() => ({
-    inProgress: tasks.filter(t => t.status === TaskStatus.IN_PROGRESS),
-    completed: tasks.filter(t => t.status === TaskStatus.COMPLETED)
-  }), [tasks]);
+  const filteredTasks = useMemo(() => {
+    const lowerTerm = searchTerm.toLowerCase();
+    
+    // 검색 필터링 함수
+    const matchesSearch = (task: Task) => {
+      if (!searchTerm) return true;
+      return (
+        task.title.toLowerCase().includes(lowerTerm) ||
+        task.description.toLowerCase().includes(lowerTerm) ||
+        task.createdBy.toLowerCase().includes(lowerTerm) ||
+        (task.completedBy && task.completedBy.toLowerCase().includes(lowerTerm))
+      );
+    };
+
+    return {
+      inProgress: tasks.filter(t => t.status === TaskStatus.IN_PROGRESS && matchesSearch(t)),
+      completed: tasks.filter(t => t.status === TaskStatus.COMPLETED && matchesSearch(t))
+    };
+  }, [tasks, searchTerm]);
 
   return (
     <div className="min-h-screen pb-20">
@@ -305,33 +323,49 @@ const App: React.FC = () => {
 
         {/* Section 4: Task Boards */}
         <section className="space-y-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-6 bg-blue-600 rounded-full"></div>
-              <h3 className="text-lg font-bold text-slate-800">업무 아카이브</h3>
-            </div>
-            <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-xl">
-              <button 
-                onClick={() => handleMonthChange(-1)}
-                className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-600"
-              >
-                ◀
-              </button>
-              <div className="min-w-[120px] text-center font-bold text-slate-700">
-                {selectedDate.getFullYear()}년 {selectedDate.getMonth() + 1}월
+          <div className="flex flex-col gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-6 bg-blue-600 rounded-full"></div>
+                <h3 className="text-lg font-bold text-slate-800">업무 아카이브</h3>
               </div>
-              <button 
-                onClick={() => handleMonthChange(1)}
-                className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-600"
-              >
-                ▶
-              </button>
-              <button 
-                onClick={() => setSelectedDate(new Date())}
-                className="ml-2 px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-500 hover:text-blue-600 hover:border-blue-200 transition-all"
-              >
-                이번 달
-              </button>
+              <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-xl">
+                <button 
+                  onClick={() => handleMonthChange(-1)}
+                  className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-600"
+                >
+                  ◀
+                </button>
+                <div className="min-w-[120px] text-center font-bold text-slate-700">
+                  {selectedDate.getFullYear()}년 {selectedDate.getMonth() + 1}월
+                </div>
+                <button 
+                  onClick={() => handleMonthChange(1)}
+                  className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-600"
+                >
+                  ▶
+                </button>
+                <button 
+                  onClick={() => setSelectedDate(new Date())}
+                  className="ml-2 px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-500 hover:text-blue-600 hover:border-blue-200 transition-all"
+                >
+                  이번 달
+                </button>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Icons.Search />
+              </div>
+              <input 
+                type="text" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="업무 검색 (제목, 내용, 작성자 등)..." 
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+              />
             </div>
           </div>
 
